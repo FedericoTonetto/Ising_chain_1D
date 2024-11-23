@@ -4,6 +4,7 @@ This module contains the class for the 1D quantum Ising chain.
 import numpy as np
 from scipy.linalg import expm
 from tqdm import tqdm
+from joblib import Parallel, delayed
 
 class QuantumIsingChain1D:
     """
@@ -53,8 +54,8 @@ class QuantumIsingChain1D:
             numpy.ndarray[float, N,N]: The evolution operator at time t using expm of scipy.
         """
         return expm(-1j * self.H * t)
-
-    def compute_time_evolution_covariance_matrix(self, t_init: float, t_final: float, t_step: float, initial_gamma_0 : np.ndarray, disable_tqdm: bool = False):
+    
+    def compute_time_evolution_covariance_matrix(self, t_init: float, t_final: float, t_step: float, initial_gamma_0: np.ndarray, disable_tqdm: bool = False):
         """
         Compute the time evolution of the covariance matrix numerically using the formula $\Gamma(t) = e^{iHt} \Gamma (0) e^{-iHt}$.
 
@@ -70,14 +71,17 @@ class QuantumIsingChain1D:
             Jt_values (numpy.ndarray): Array of time points.
         """
         Jt_values = self.J * np.arange(t_init, t_final + t_step, t_step)
-        gamma_t_matrices = []
-        gamma_evolved = initial_gamma_0
 
-        for Jt in tqdm(Jt_values, desc="Computing Numerical Evolution", disable=disable_tqdm):
+        # Function to compute evolution for a single time point
+        def evolve_single_time(Jt):
             U_t = self.compute_evolution_operator(Jt)
-            gamma_evolved = U_t.conj().T @ initial_gamma_0 @ U_t
-            gamma_t_matrices.append(gamma_evolved)
-        
+            return U_t.conj().T @ initial_gamma_0 @ U_t
+
+        # Use joblib for parallel computation
+        gamma_t_matrices = Parallel(n_jobs=-1)(
+            delayed(evolve_single_time)(Jt) for Jt in tqdm(Jt_values, desc="Computing Numerical Evolution", disable=disable_tqdm)
+        )
+
         gamma_t_series = np.array(gamma_t_matrices)
 
         return gamma_t_series, Jt_values
