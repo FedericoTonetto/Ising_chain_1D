@@ -70,7 +70,7 @@ class QuantumIsingChain1D:
             gamma_t_series (numpy.ndarray): np.array of $\Gamma(t)$ for each time step (3D array).
             Jt_values (numpy.ndarray): Array of time points.
         """
-        Jt_values = self.J * np.arange(t_init, t_final + t_step, t_step)
+        t_values = np.arange(t_init, t_final + t_step, t_step)
 
         # Function to compute evolution for a single time point
         def evolve_single_time(Jt):
@@ -79,9 +79,9 @@ class QuantumIsingChain1D:
 
         # Use joblib for parallel computation
         gamma_t_matrices = Parallel(n_jobs=-1)(
-            delayed(evolve_single_time)(Jt) for Jt in tqdm(Jt_values, desc="Computing Numerical Evolution", disable=disable_tqdm)
+            delayed(evolve_single_time)(Jt) for Jt in tqdm(t_values, desc="Computing Numerical Evolution", disable=disable_tqdm)
         )
 
         gamma_t_series = np.array(gamma_t_matrices)
 
-        return gamma_t_series, Jt_values
+        return gamma_t_series, t_values
