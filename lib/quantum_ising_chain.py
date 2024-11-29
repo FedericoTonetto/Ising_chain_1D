@@ -73,13 +73,13 @@ class QuantumIsingChain1D:
         t_values = np.arange(t_init, t_final + t_step, t_step)
 
         # Function to compute evolution for a single time point
-        def evolve_single_time(Jt):
-            U_t = self.compute_evolution_operator(Jt)
+        def evolve_single_time(t):
+            U_t = self.compute_evolution_operator(t)
             return U_t.conj().T @ initial_gamma_0 @ U_t
 
         # Use joblib for parallel computation
         gamma_t_matrices = Parallel(n_jobs=-1)(
-            delayed(evolve_single_time)(Jt) for Jt in tqdm(t_values, desc="Computing Numerical Evolution", disable=disable_tqdm)
+            delayed(evolve_single_time)(t) for t in tqdm(t_values, desc="Computing Numerical Evolution", disable=disable_tqdm)
         )
 
         gamma_t_series = np.array(gamma_t_matrices)
